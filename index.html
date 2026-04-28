@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>theillest vs deceptiv · Health Rivalry</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#0d0d1a;color:#e8e8f0;font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;}
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
+::-webkit-scrollbar{width:4px;height:4px;}::-webkit-scrollbar-track{background:#111;}::-webkit-scrollbar-thumb{background:#333;border-radius:4px;}
+.tab-btn{background:transparent;border:1px solid transparent;border-radius:8px;padding:6px 14px;font-size:13px;cursor:pointer;white-space:nowrap;transition:all 0.15s;color:#666;}
+.tab-btn.active-dash{background:#252540;border-color:#444;color:#fff;font-weight:700;}
+.tab-btn.active-ti{background:#00d4ff18;border-color:#00d4ff50;color:#00d4ff;font-weight:700;}
+.tab-btn.active-dec{background:#ff6b3518;border-color:#ff6b3550;color:#ff6b35;font-weight:700;}
+.tab-btn.active-meet{background:#a855f718;border-color:#a855f750;color:#a855f7;font-weight:700;}
+.card{background:#13132a;border:1px solid #1e1e38;border-radius:14px;padding:14px 16px;margin-bottom:12px;}
+.section-label{font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;}
+.prog-bar-bg{background:#1e1e38;border-radius:20px;height:8px;overflow:hidden;}
+.prog-bar{height:100%;border-radius:20px;transition:width 0.6s cubic-bezier(.4,0,.2,1);}
+.macro-box{background:#0d0d20;border-radius:10px;padding:10px 8px;text-align:center;flex:1;}
+.log-input{background:#0d0d20;border:1px solid #2a2a45;border-radius:9px;padding:9px 12px;color:#e8e8f0;font-size:13px;width:100%;outline:none;}
+.log-input:focus{border-color:#444;}
+.log-btn{border:none;border-radius:9px;padding:9px 18px;font-weight:800;font-size:13px;cursor:pointer;transition:opacity 0.15s,transform 0.1s;}
+.log-btn:hover{opacity:.88;}.log-btn:active{transform:scale(.97);}
+.check-row{display:flex;align-items:center;gap:10px;padding:9px 4px;cursor:pointer;user-select:none;border-radius:8px;transition:background 0.1s;}
+.check-row:hover{background:#0d0d25;}
+.check-row+.check-row{border-top:1px solid #1a1a2e;}
+.check-box{width:22px;height:22px;border-radius:6px;border:2px solid #2a2a45;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.15s;}
+.check-box.done{border-color:transparent;}
+.check-box svg{display:none;}.check-box.done svg{display:block;}
+.check-label{font-size:13px;color:#ccc;flex:1;line-height:1.3;transition:color 0.15s;}
+.check-label.done{color:#444;text-decoration:line-through;}
+.check-meta{font-size:11px;color:#555;white-space:nowrap;}
+.check-meta.done{color:#333;}
+.meet-idea{display:flex;gap:12px;align-items:center;padding:10px 0;}
+.meet-idea+.meet-idea{border-top:1px solid #1a1a2e;}
+.emoji-box{width:38px;height:38px;background:#1a1a2e;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.day-chip{background:#0d0d20;border-radius:9px;padding:8px 6px;border:1px solid transparent;}
+.day-chip.today{background:#1a1a2e;border-color:#2a2a45;}
+.badge{font-size:10px;padding:3px 9px;border-radius:20px;font-weight:700;}
+.complete-banner{background:#22c55e18;border:1px solid #22c55e30;border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+#app{padding:0 14px;max-width:760px;margin:0 auto;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// ─── localStorage helpers (replaces window.storage) ───────────────────────
+const store = {
+  get: (key) => { try { const v = localStorage.getItem(key); return v ? {value:v} : null; } catch(e){ return null; } },
+  set: (key, val) => { try { localStorage.setItem(key, val); } catch(e){} }
+};
+
+// ─── Data ──────────────────────────────────────────────────────────────────
+const TODAY_KEY   = new Date().toISOString().slice(0,10);
+const TODAY_LABEL = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][new Date().getDay()];
+
+const GOALS = {
+  theillest:{goal:"lose",target:15,startWeight:195,targetWeight:180,calories:1600,protein:150,carbs:130,fat:55},
+  deceptiv: {goal:"gain",target:15,startWeight:160,targetWeight:175,calories:3200,protein:220,carbs:380,fat:90}
+};
+
+const WORKOUTS = {
+  theillest:[
+    {day:"Monday",   name:"HIIT Cardio + Core",    dur:"55 min",exercises:[{n:"Jump rope warm-up",s:"-",r:"5 min"},{n:"Burpees",s:"4",r:"15 reps"},{n:"Box jumps",s:"4",r:"12 reps"},{n:"Mountain climbers",s:"3",r:"30 sec"},{n:"Plank",s:"3",r:"45 sec"},{n:"Bicycle crunches",s:"3",r:"20 reps"}]},
+    {day:"Tuesday",  name:"Upper Body Strength",   dur:"50 min",exercises:[{n:"Push-ups",s:"4",r:"15 reps"},{n:"Dumbbell rows",s:"3",r:"12 reps"},{n:"Shoulder press",s:"3",r:"12 reps"},{n:"Tricep dips",s:"3",r:"15 reps"},{n:"Lat pulldowns",s:"3",r:"12 reps"}]},
+    {day:"Wednesday",name:"5K Run",                dur:"35 min",exercises:[{n:"Walk warm-up",s:"-",r:"5 min"},{n:"5K run (moderate)",s:"1",r:"5K"},{n:"Cool-down walk",s:"-",r:"5 min"},{n:"Stretching",s:"1",r:"10 min"}]},
+    {day:"Thursday", name:"Lower Body Strength",   dur:"55 min",exercises:[{n:"Squats",s:"4",r:"15 reps"},{n:"Walking lunges",s:"3",r:"20 steps"},{n:"Deadlifts (light)",s:"3",r:"12 reps"},{n:"Calf raises",s:"3",r:"20 reps"},{n:"Glute bridges",s:"3",r:"15 reps"}]},
+    {day:"Friday",   name:"HIIT Cardio",           dur:"45 min",exercises:[{n:"Jumping jacks",s:"3",r:"45 sec"},{n:"High knees",s:"4",r:"30 sec"},{n:"Sprint intervals",s:"8",r:"20s on/10s off"},{n:"Jump squats",s:"4",r:"12 reps"}]},
+    {day:"Saturday", name:"Yoga / Active Recovery",dur:"40 min",exercises:[{n:"Sun salutation flow",s:"3",r:"5 rounds"},{n:"Hip flexor stretch",s:"2",r:"60 sec each"},{n:"Foam rolling",s:"1",r:"15 min"}]},
+    {day:"Sunday",   name:"Rest Day",              dur:"-",exercises:[]}
+  ],
+  deceptiv:[
+    {day:"Monday",   name:"Chest & Triceps",    dur:"60 min",exercises:[{n:"Bench press",s:"5",r:"5 reps heavy"},{n:"Incline DB press",s:"4",r:"8 reps"},{n:"Cable flyes",s:"3",r:"12 reps"},{n:"Tricep pushdowns",s:"4",r:"10 reps"},{n:"Skull crushers",s:"3",r:"10 reps"}]},
+    {day:"Tuesday",  name:"Back & Biceps",      dur:"60 min",exercises:[{n:"Deadlifts",s:"5",r:"5 reps heavy"},{n:"Pull-ups / Lat pulldown",s:"4",r:"8 reps"},{n:"Barbell rows",s:"4",r:"8 reps"},{n:"Barbell curls",s:"4",r:"10 reps"},{n:"Hammer curls",s:"3",r:"12 reps"}]},
+    {day:"Wednesday",name:"Legs & Glutes",      dur:"65 min",exercises:[{n:"Back squats",s:"5",r:"5 reps heavy"},{n:"Romanian deadlifts",s:"4",r:"8 reps"},{n:"Leg press",s:"4",r:"10 reps"},{n:"Leg curls",s:"3",r:"12 reps"},{n:"Calf raises",s:"4",r:"15 reps"}]},
+    {day:"Thursday", name:"Shoulders & Arms",   dur:"55 min",exercises:[{n:"Overhead press",s:"5",r:"5 reps heavy"},{n:"Lateral raises",s:"4",r:"12 reps"},{n:"Front raises",s:"3",r:"12 reps"},{n:"Face pulls",s:"3",r:"15 reps"},{n:"Dips",s:"3",r:"10 reps"}]},
+    {day:"Friday",   name:"Full Body Compound", dur:"65 min",exercises:[{n:"Power cleans",s:"4",r:"5 reps"},{n:"Squat + Press",s:"4",r:"8 reps"},{n:"Pull-ups",s:"4",r:"max reps"},{n:"Dips",s:"4",r:"max reps"},{n:"Farmer's carry",s:"3",r:"40m walk"}]},
+    {day:"Saturday", name:"Accessory Work",     dur:"45 min",exercises:[{n:"Isolation curls",s:"4",r:"12 reps"},{n:"Cable chest work",s:"4",r:"15 reps"},{n:"Core circuit",s:"3",r:"15 min"}]},
+    {day:"Sunday",   name:"Rest & Recovery",    dur:"-",exercises:[]}
+  ]
+};
+
+const NUTRITION = {
+  theillest:[
+    {name:"Breakfast",  items:"3 egg whites + 1 whole egg, 1 cup oatmeal w/ berries, black coffee",cal:380},
+    {name:"Lunch",      items:"6oz grilled chicken, large salad w/ olive oil & lemon, 1 apple",    cal:430},
+    {name:"Snack",      items:"Non-fat Greek yogurt + handful almonds",                             cal:200},
+    {name:"Dinner",     items:"5oz salmon, 1 cup steamed broccoli, ½ cup quinoa",                  cal:490},
+    {name:"Optional",   items:"Casein protein shake or cottage cheese",                             cal:100}
+  ],
+  deceptiv:[
+    {name:"Breakfast",   items:"4 eggs + 2 whites, 2 cups oatmeal w/ banana & peanut butter, 2 cups whole milk",cal:820},
+    {name:"Pre-Workout", items:"2 scoops whey protein, 1 banana, whole grain toast w/ honey",                    cal:420},
+    {name:"Post-Workout",items:"2 scoops whey + 50g dextrose, 16oz whole milk",                                  cal:540},
+    {name:"Lunch",       items:"8oz lean beef or chicken, 2 cups rice, 1 cup veggies, avocado",                  cal:780},
+    {name:"Dinner",      items:"8oz salmon or steak, large sweet potato, mixed veggies, cottage cheese",         cal:640}
+  ]
+};
+
+const MEETUP_IDEAS = [
+  {activity:"Basketball at the courts",icon:"🏀",type:"Cardio + Fun",dur:"90 min",  best:"Evening 6–8PM or weekend"},
+  {activity:"Hiking local trails",      icon:"⛰️",type:"Cardio",     dur:"2–3 hrs",  best:"Saturday/Sunday morning"},
+  {activity:"Gym session together",     icon:"🏋️",type:"Strength",   dur:"75 min",   best:"Evening 5:30–7PM"},
+  {activity:"Beach volleyball",         icon:"🏐",type:"Cardio+Fun", dur:"2 hours",  best:"Weekend afternoon"},
+  {activity:"Cycling route",            icon:"🚴",type:"Cardio",     dur:"60–90 min",best:"Evening 5:30–7PM or weekend"},
+  {activity:"Tennis / Pickleball",      icon:"🎾",type:"Cardio+Fun", dur:"60 min",   best:"Evening 5:30–7PM"},
+  {activity:"Evening walk/jog meetup",  icon:"🏃",type:"Light Cardio",dur:"45 min",  best:"Weeknight 5:30PM (meet halfway)"}
+];
+
+const DAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+
+// ─── State ─────────────────────────────────────────────────────────────────
+let state = {
+  tab:"dashboard",
+  tiLogs:[], dLogs:[], meetups:[],
+  tiWeight:"", dWeight:"",
+  meetDate:"", meetActivity:"", meetNote:"",
+  chartInstance:null,
+  checks:{theillest:{ex:[],meal:[]},deceptiv:{ex:[],meal:[]}}
+};
+
+function loadState() {
+  try {
+    const ti = store.get("ti_logs_v2"); if(ti) state.tiLogs=JSON.parse(ti.value);
+    const d  = store.get("d_logs_v2");  if(d)  state.dLogs =JSON.parse(d.value);
+    const m  = store.get("meetups_v2"); if(m)  state.meetups=JSON.parse(m.value);
+    for(const user of ["theillest","deceptiv"]){
+      const ck = store.get(`checks_${user}_${TODAY_KEY}`);
+      if(ck) state.checks[user]=JSON.parse(ck.value);
+    }
+  } catch(e){}
+  initChecks("theillest"); initChecks("deceptiv");
+}
+
+function initChecks(user) {
+  const wk = WORKOUTS[user].find(w=>w.day===TODAY_LABEL)||{exercises:[]};
+  if(!state.checks[user].ex.length)   state.checks[user].ex   = new Array(wk.exercises.length).fill(false);
+  if(!state.checks[user].meal.length) state.checks[user].meal = new Array(NUTRITION[user].length).fill(false);
+}
+
+function saveChecks(user){ store.set(`checks_${user}_${TODAY_KEY}`, JSON.stringify(state.checks[user])); }
+function saveUser(u,logs){ store.set(u==='ti'?'ti_logs_v2':'d_logs_v2', JSON.stringify(logs)); }
+function saveMeetups()   { store.set('meetups_v2', JSON.stringify(state.meetups)); }
+
+// ─── Helpers ───────────────────────────────────────────────────────────────
+function getProgress(logs, goal) {
+  if(!logs.length) return {current:goal.startWeight,change:0,pct:0};
+  const latest=logs[logs.length-1].weight;
+  const change=goal.goal==='lose'?goal.startWeight-latest:latest-goal.startWeight;
+  return {current:latest,change:Math.max(0,change),pct:Math.min(100,Math.max(0,(Math.max(0,change)/goal.target)*100))};
+}
+
+function ringHTML(done,total,color,size=44){
+  if(total===0) return '';
+  const r=(size/2)-5,cx=size/2,cy=size/2,circ=2*Math.PI*r;
+  const dash=(done/total)*circ;
+  return `<svg width="${size}" height="${size}" style="transform:rotate(-90deg);flex-shrink:0;"><circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#1e1e38" stroke-width="4"/><circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="4" stroke-dasharray="${dash.toFixed(1)} ${circ.toFixed(1)}" stroke-linecap="round"/></svg>`;
+}
+
+// ─── Actions ───────────────────────────────────────────────────────────────
+function toggleCheck(user,type,idx){
+  state.checks[user][type][idx]=!state.checks[user][type][idx];
+  saveChecks(user); render();
+}
+
+function logWeight(user){
+  const key=user==='theillest'?'tiWeight':'dWeight';
+  const val=parseFloat(state[key]);
+  if(!val||isNaN(val)) return;
+  const entry={date:new Date().toLocaleDateString(),weight:val,ts:Date.now()};
+  if(user==='theillest'){state.tiLogs=[...state.tiLogs,entry];saveUser('ti',state.tiLogs);}
+  else{state.dLogs=[...state.dLogs,entry];saveUser('d',state.dLogs);}
+  state[key]=''; render();
+}
+
+function addMeetup(){
+  if(!state.meetDate||!state.meetActivity) return;
+  state.meetups=[...state.meetups,{date:state.meetDate,activity:state.meetActivity,note:state.meetNote,id:Date.now()}].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  saveMeetups(); state.meetDate='';state.meetActivity='';state.meetNote=''; render();
+}
+
+function switchTab(tab){
+  state.tab=tab;
+  if(state.chartInstance){state.chartInstance.destroy();state.chartInstance=null;}
+  render();
+}
+
+// ─── Render ────────────────────────────────────────────────────────────────
+function render(){
+  const tiProg=getProgress(state.tiLogs,GOALS.theillest);
+  const dProg =getProgress(state.dLogs, GOALS.deceptiv);
+  document.getElementById('app').innerHTML=`
+<div style="padding:14px 0 32px;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+    <div>
+      <div style="font-size:18px;font-weight:900;letter-spacing:-0.5px;line-height:1.1;">
+        <span style="color:#00d4ff;">theillest</span><span style="color:#333;margin:0 8px;font-weight:400;">vs</span><span style="color:#ff6b35;">deceptiv</span>
+      </div>
+      <div style="font-size:10px;color:#444;margin-top:3px;letter-spacing:.5px;">30-DAY HEALTH CHALLENGE · ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}).toUpperCase()}</div>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center;">
+      <span class="badge" style="background:#00d4ff18;color:#00d4ff;border:1px solid #00d4ff30;">${Math.round(tiProg.pct)}%</span>
+      <span style="font-size:10px;color:#333;">vs</span>
+      <span class="badge" style="background:#ff6b3518;color:#ff6b35;border:1px solid #ff6b3530;">${Math.round(dProg.pct)}%</span>
+    </div>
+  </div>
+  <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px;">
+    <button class="tab-btn ${state.tab==='dashboard'?'active-dash':''}" onclick="switchTab('dashboard')">Dashboard</button>
+    <button class="tab-btn ${state.tab==='theillest'?'active-ti':''}" onclick="switchTab('theillest')">theillest</button>
+    <button class="tab-btn ${state.tab==='deceptiv'?'active-dec':''}" onclick="switchTab('deceptiv')">deceptiv</button>
+    <button class="tab-btn ${state.tab==='meetups'?'active-meet':''}" onclick="switchTab('meetups')">Meetups</button>
+  </div>
+  ${state.tab==='dashboard'?renderDashboard(tiProg,dProg):''}
+  ${state.tab==='theillest'?renderUser('theillest',tiProg):''}
+  ${state.tab==='deceptiv' ?renderUser('deceptiv', dProg ):''}
+  ${state.tab==='meetups'  ?renderMeetups():''}
+</div>`;
+  if(state.tab==='dashboard') initChart();
+}
+
+function renderDayCard(user,color,exDone,exTot,mlDone,mlTot,score){
+  const done=score===100;
+  return `<div style="background:#0a0a1a;border-radius:12px;padding:12px;border:1px solid ${done?color+'40':'#1a1a2e'};">
+  <div style="font-size:11px;color:${color};font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">${user}</div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <div style="position:relative;display:inline-flex;align-items:center;justify-content:center;">
+      ${ringHTML(exDone+mlDone,exTot+mlTot,color,48)}
+      <div style="position:absolute;font-size:11px;font-weight:800;color:${color};">${score}</div>
+    </div>
+    <div style="flex:1;">
+      <div style="font-size:11px;color:#666;margin-bottom:4px;">Workout <span style="color:${color};font-weight:700;">${exDone}/${exTot}</span></div>
+      <div style="background:#1e1e38;border-radius:4px;height:4px;margin-bottom:6px;overflow:hidden;"><div style="width:${exTot>0?Math.round(exDone/exTot*100):0}%;height:100%;background:${color};border-radius:4px;"></div></div>
+      <div style="font-size:11px;color:#666;margin-bottom:4px;">Nutrition <span style="color:${color};font-weight:700;">${mlDone}/${mlTot}</span></div>
+      <div style="background:#1e1e38;border-radius:4px;height:4px;overflow:hidden;"><div style="width:${mlTot>0?Math.round(mlDone/mlTot*100):0}%;height:100%;background:${color};border-radius:4px;"></div></div>
+    </div>
+  </div>
+  ${done?`<div style="margin-top:10px;font-size:11px;color:${color};font-weight:700;text-align:center;">✓ Day complete!</div>`:''}
+</div>`;
+}
+
+function renderDashboard(tiP,dP){
+  const tc=state.checks.theillest, dc=state.checks.deceptiv;
+  const tiED=tc.ex.filter(Boolean).length,  tiET=tc.ex.length;
+  const tiMD=tc.meal.filter(Boolean).length,tiMT=tc.meal.length;
+  const dED =dc.ex.filter(Boolean).length,  dET =dc.ex.length;
+  const dMD =dc.meal.filter(Boolean).length,dMT =dc.meal.length;
+  const tiS=(tiET+tiMT>0)?Math.round(((tiED+tiMD)/(tiET+tiMT))*100):0;
+  const dS =(dET+dMT>0) ?Math.round(((dED+dMD)/(dET+dMT))*100)  :0;
+
+  return `
+<div class="card" style="border-color:#1a2540;">
+  <div class="section-label">Rivalry Scoreboard</div>
+  <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;">
+    <div style="text-align:center;">
+      <div style="font-size:11px;color:#00d4ff;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">theillest</div>
+      <div style="font-size:40px;font-weight:900;color:#00d4ff;line-height:1;">${Math.round(tiP.pct)}</div>
+      <div style="font-size:10px;color:#444;">% goal</div>
+      <div style="font-size:12px;color:#e8e8f0;margin-top:6px;font-weight:600;">${tiP.current} lbs</div>
+      <div style="font-size:11px;color:#666;">−${tiP.change.toFixed(1)} lbs lost</div>
+    </div>
+    <div style="text-align:center;color:#2a2a45;font-size:22px;">|</div>
+    <div style="text-align:center;">
+      <div style="font-size:11px;color:#ff6b35;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">deceptiv</div>
+      <div style="font-size:40px;font-weight:900;color:#ff6b35;line-height:1;">${Math.round(dP.pct)}</div>
+      <div style="font-size:10px;color:#444;">% goal</div>
+      <div style="font-size:12px;color:#e8e8f0;margin-top:6px;font-weight:600;">${dP.current} lbs</div>
+      <div style="font-size:11px;color:#666;">+${dP.change.toFixed(1)} lbs gained</div>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:14px;padding:8px;background:#0a0a1a;border-radius:9px;font-size:12px;color:#888;">
+    ${tiP.pct>dP.pct?'🔵 theillest leads':tiP.pct<dP.pct?'🟠 deceptiv leads':'🟡 Tied!'}
+  </div>
+</div>
+
+<div class="card">
+  <div class="section-label">Today's Completion · ${TODAY_LABEL}</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    ${renderDayCard('theillest','#00d4ff',tiED,tiET,tiMD,tiMT,tiS)}
+    ${renderDayCard('deceptiv', '#ff6b35',dED, dET, dMD, dMT, dS)}
+  </div>
+</div>
+
+<div class="card">
+  <div class="section-label">Weight Progress</div>
+  ${(state.tiLogs.length===0&&state.dLogs.length===0)?'<div style="text-align:center;color:#333;font-size:13px;padding:24px 0;">Log weights in each user tab to see chart</div>':''}
+  <div style="position:relative;height:180px;${(state.tiLogs.length===0&&state.dLogs.length===0)?'display:none':''}">
+    <canvas id="weightChart"></canvas>
+  </div>
+  ${(state.tiLogs.length>0||state.dLogs.length>0)?`<div style="display:flex;gap:16px;margin-top:10px;font-size:11px;color:#666;">
+    <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:3px;background:#00d4ff;display:inline-block;border-radius:2px;"></span>theillest</span>
+    <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:3px;background:#ff6b35;display:inline-block;border-radius:2px;"></span>deceptiv</span>
+  </div>`:''}
+</div>
+
+<div class="card">
+  <div class="section-label">Weekly Schedule</div>
+  <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;">
+    ${DAYS.map(d=>`<div class="day-chip ${d===TODAY_LABEL?'today':''}">
+      <div style="font-size:9px;font-weight:700;text-transform:uppercase;color:${d===TODAY_LABEL?'#e8e8f0':'#444'};margin-bottom:4px;">${d.slice(0,1)}</div>
+      <div style="font-size:9px;color:#00d4ff;margin-bottom:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${WORKOUTS.theillest.find(w=>w.day===d)?.name.split(' ').slice(0,2).join(' ')}</div>
+      <div style="font-size:9px;color:#ff6b35;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${WORKOUTS.deceptiv.find(w=>w.day===d)?.name.split(' ').slice(0,2).join(' ')}</div>
+    </div>`).join('')}
+  </div>
+</div>`;
+}
+
+function renderUser(user,prog){
+  const isT=user==='theillest';
+  const color=isT?'#00d4ff':'#ff6b35';
+  const goal=GOALS[user];
+  const workout=WORKOUTS[user].find(w=>w.day===TODAY_LABEL)||{name:"Rest",dur:"-",exercises:[]};
+  const meals=NUTRITION[user];
+  const macro=[{l:'Calories',v:goal.calories,u:'kcal',c:color},{l:'Protein',v:goal.protein,u:'g',c:'#22c55e'},{l:'Carbs',v:goal.carbs,u:'g',c:'#f59e0b'},{l:'Fat',v:goal.fat,u:'g',c:'#ec4899'}];
+  const logs=isT?state.tiLogs:state.dLogs;
+  const wKey=isT?'tiWeight':'dWeight';
+  const ck=state.checks[user];
+  const exDone=ck.ex.filter(Boolean).length, exTot=workout.exercises.length;
+  const mlDone=ck.meal.filter(Boolean).length,mlTot=meals.length;
+  const dayScore=(exTot+mlTot)>0?Math.round(((exDone+mlDone)/(exTot+mlTot))*100):0;
+  const calsDone=meals.filter((_,j)=>ck.meal[j]).reduce((s,x)=>s+x.cal,0);
+
+  return `
+<div class="card" style="border-color:${color}25;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+    <div>
+      <div class="section-label" style="color:${color}aa;margin-bottom:4px;">${goal.goal==='lose'?'🎯 Weight Loss':'💪 Muscle Gain'}</div>
+      <div style="font-size:26px;font-weight:900;color:${color};line-height:1;">${Math.round(prog.pct)}<span style="font-size:13px;font-weight:400;color:#555;">%</span></div>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:20px;font-weight:800;color:#e8e8f0;">${prog.current} <span style="font-size:11px;color:#555;">lbs</span></div>
+      <div style="font-size:12px;color:${color};font-weight:700;">${goal.goal==='lose'?'−':'+'} ${prog.change.toFixed(1)} lbs</div>
+    </div>
+  </div>
+  <div class="prog-bar-bg"><div class="prog-bar" style="width:${prog.pct}%;background:${color};"></div></div>
+  <div style="display:flex;justify-content:space-between;margin-top:5px;font-size:10px;color:#444;">
+    <span>Start: ${goal.startWeight} lbs</span><span>Goal: ${goal.targetWeight} lbs</span>
+  </div>
+</div>
+
+<div class="card">
+  <div class="section-label">Log Today's Weight</div>
+  <div style="display:flex;gap:8px;">
+    <input class="log-input" type="number" id="wi_${user}" placeholder="Weight in lbs..." value="${state[wKey]}" oninput="state['${wKey}']=this.value" step="0.1">
+    <button class="log-btn" style="background:${color};color:#000;" onclick="logWeight('${user}')">+ Log</button>
+  </div>
+  ${logs.length>0?`<div style="font-size:11px;color:#444;margin-top:8px;">Last: ${logs[logs.length-1].weight} lbs on ${logs[logs.length-1].date}</div>`:'<div style="font-size:11px;color:#333;margin-top:8px;">No entries yet — log your first weigh-in!</div>'}
+</div>
+
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+    <div>
+      <div class="section-label" style="margin-bottom:2px;">Today's Workout · ${TODAY_LABEL}</div>
+      <div style="font-size:15px;font-weight:800;color:#e8e8f0;">${workout.name}</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:${color}18;color:${color};">${workout.dur}</span>
+      <div style="position:relative;display:inline-flex;align-items:center;justify-content:center;">
+        ${ringHTML(exDone,exTot,color,40)}
+        <div style="position:absolute;font-size:10px;font-weight:800;color:${color};">${exTot>0?exDone:'–'}</div>
+      </div>
+    </div>
+  </div>
+  ${exDone===exTot&&exTot>0?`<div class="complete-banner"><span style="font-size:16px;">🔥</span><span style="font-size:13px;color:#22c55e;font-weight:700;">Workout complete! Great work.</span></div>`:''}
+  ${workout.exercises.length>0?workout.exercises.map((ex,i)=>`
+  <div class="check-row" onclick="toggleCheck('${user}','ex',${i})">
+    <div class="check-box ${ck.ex[i]?'done':''}" style="${ck.ex[i]?'background:'+color+';':''}">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><polyline points="2,6 5,9 10,3" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <span class="check-label ${ck.ex[i]?'done':''}">${ex.n}</span>
+    <span class="check-meta ${ck.ex[i]?'done':''}">${ex.s!=='-'?ex.s+'× ':''} ${ex.r}</span>
+  </div>`).join(''):
+  `<div style="font-size:13px;color:#444;font-style:italic;padding:8px 0;">Rest and recover — body needs this to grow.</div>`}
+  <div style="margin-top:10px;padding-top:10px;border-top:1px solid #1a1a2e;font-size:11px;color:#555;">${exDone} of ${exTot} exercises completed</div>
+</div>
+
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+    <div>
+      <div class="section-label" style="margin-bottom:2px;">Nutrition Plan</div>
+      <div style="font-size:12px;color:#555;">${goal.calories} cal/day target</div>
+    </div>
+    <div style="position:relative;display:inline-flex;align-items:center;justify-content:center;">
+      ${ringHTML(mlDone,mlTot,'#22c55e',40)}
+      <div style="position:absolute;font-size:10px;font-weight:800;color:#22c55e;">${mlDone}</div>
+    </div>
+  </div>
+  ${mlDone===mlTot&&mlTot>0?`<div class="complete-banner"><span style="font-size:16px;">🥗</span><span style="font-size:13px;color:#22c55e;font-weight:700;">All meals logged! Nutrition on point.</span></div>`:''}
+  <div style="display:flex;gap:8px;margin-bottom:14px;">
+    ${macro.map(m=>`<div class="macro-box"><div style="font-size:10px;color:#555;margin-bottom:3px;">${m.l}</div><div style="font-size:19px;font-weight:900;color:${m.c};line-height:1;">${m.v}</div><div style="font-size:9px;color:#444;">${m.u}</div></div>`).join('')}
+  </div>
+  ${meals.map((meal,i)=>`
+  <div class="check-row" onclick="toggleCheck('${user}','meal',${i})">
+    <div class="check-box ${ck.meal[i]?'done':''}" style="${ck.meal[i]?'background:#22c55e;':''}">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><polyline points="2,6 5,9 10,3" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div style="flex:1;min-width:0;">
+      <div style="font-size:12px;font-weight:700;color:${ck.meal[i]?'#444':color};transition:color .15s;">${meal.name}</div>
+      <div style="font-size:11px;color:${ck.meal[i]?'#333':'#777'};margin-top:2px;">${meal.items}</div>
+    </div>
+    <span class="check-meta ${ck.meal[i]?'done':''}" style="padding-left:8px;">${meal.cal}</span>
+  </div>`).join('')}
+  <div style="margin-top:10px;padding-top:10px;border-top:1px solid #1a1a2e;display:flex;justify-content:space-between;align-items:center;">
+    <span style="font-size:11px;color:#555;">${mlDone} of ${mlTot} meals logged</span>
+    <span style="font-size:12px;font-weight:700;color:#22c55e;">${calsDone} / ${goal.calories} cal</span>
+  </div>
+</div>
+
+<div style="margin-bottom:12px;background:#0d0d20;border-radius:12px;padding:14px;border:1px solid #1a1a2e;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+    <div class="section-label" style="margin-bottom:0;">Today's Overall Progress</div>
+    <span style="font-size:20px;font-weight:900;color:${color};">${dayScore}%</span>
+  </div>
+  <div class="prog-bar-bg"><div class="prog-bar" style="width:${dayScore}%;background:linear-gradient(90deg,${color},#22c55e);"></div></div>
+  <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:#444;">
+    <span>Workout ${exDone}/${exTot}</span><span>Nutrition ${mlDone}/${mlTot}</span>
+  </div>
+</div>
+
+${logs.length>0?`<div class="card"><div class="section-label">Weight Log</div>
+  ${logs.slice().reverse().slice(0,6).map(e=>`<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #1a1a2e;">
+    <span style="font-size:13px;color:#888;">${e.date}</span>
+    <span style="font-size:13px;font-weight:700;color:${color};">${e.weight} lbs</span>
+  </div>`).join('')}</div>`:''}`;
+}
+
+function renderMeetups(){
+  return `
+<div class="card" style="border-color:#a855f725;">
+  <div class="section-label" style="color:#a855f7aa;">Schedule a Meetup</div>
+  <div style="background:#0a0a1a;border-radius:9px;padding:10px;margin-bottom:12px;font-size:12px;color:#555;line-height:1.7;">
+    ⏰ Best times: evenings after 5PM or weekends<br>
+    📍 ~40 min apart — aim to meet at the halfway point
+  </div>
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    <input class="log-input" type="date" value="${state.meetDate}" oninput="state.meetDate=this.value">
+    <select class="log-input" onchange="state.meetActivity=this.value" style="cursor:pointer;color:${state.meetActivity?'#e8e8f0':'#555'};">
+      <option value="">Select an activity...</option>
+      ${MEETUP_IDEAS.map(m=>`<option value="${m.activity}" ${state.meetActivity===m.activity?'selected':''}>${m.icon} ${m.activity}</option>`).join('')}
+    </select>
+    <input class="log-input" type="text" placeholder="Notes (location, time, etc.)" value="${state.meetNote}" oninput="state.meetNote=this.value">
+    <button class="log-btn" style="background:#a855f7;color:#fff;" onclick="addMeetup()">+ Schedule Meetup</button>
+  </div>
+</div>
+${state.meetups.length>0?`<div class="card"><div class="section-label">Upcoming Meetups</div>
+  ${state.meetups.map((m,i)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;${i<state.meetups.length-1?'border-bottom:1px solid #1a1a2e;':''}">
+    <div>
+      <div style="font-size:14px;font-weight:700;color:#e8e8f0;">${m.activity}</div>
+      ${m.note?`<div style="font-size:12px;color:#555;margin-top:2px;">${m.note}</div>`:''}
+    </div>
+    <div style="text-align:right;flex-shrink:0;">
+      <div style="font-size:13px;font-weight:700;color:#a855f7;">${new Date(m.date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div>
+      <div style="font-size:10px;color:#444;">${new Date(m.date+'T12:00:00').toLocaleDateString('en-US',{weekday:'short'})}</div>
+    </div>
+  </div>`).join('')}
+</div>`:''}
+<div class="card"><div class="section-label">Activity Ideas</div>
+  ${MEETUP_IDEAS.map(m=>`<div class="meet-idea">
+    <div class="emoji-box">${m.icon}</div>
+    <div style="flex:1;">
+      <div style="font-size:14px;font-weight:700;color:#e8e8f0;">${m.activity}</div>
+      <div style="font-size:11px;color:#555;margin-top:2px;">${m.type} · ${m.dur}</div>
+      <div style="font-size:11px;color:#444;">${m.best}</div>
+    </div>
+  </div>`).join('')}
+</div>`;
+}
+
+function initChart(){
+  const canvas=document.getElementById('weightChart');
+  if(!canvas||(state.tiLogs.length===0&&state.dLogs.length===0)) return;
+  if(state.chartInstance){state.chartInstance.destroy();state.chartInstance=null;}
+  const allDates=[...new Set([...state.tiLogs.map(l=>l.date),...state.dLogs.map(l=>l.date)])].sort((a,b)=>new Date(a)-new Date(b));
+  state.chartInstance=new Chart(canvas,{
+    type:'line',
+    data:{labels:allDates.map(d=>new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric'})),
+      datasets:[
+        {label:'theillest',data:allDates.map(d=>{const l=state.tiLogs.find(x=>x.date===d);return l?l.weight:null;}),borderColor:'#00d4ff',backgroundColor:'#00d4ff15',pointBackgroundColor:'#00d4ff',borderWidth:2,pointRadius:5,tension:.3,spanGaps:true},
+        {label:'deceptiv', data:allDates.map(d=>{const l=state.dLogs.find(x=>x.date===d); return l?l.weight:null;}),borderColor:'#ff6b35',backgroundColor:'#ff6b3515',pointBackgroundColor:'#ff6b35',borderWidth:2,pointRadius:5,tension:.3,spanGaps:true}
+      ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{backgroundColor:'#1a1a2e',borderColor:'#333',borderWidth:1,titleColor:'#888',bodyColor:'#e8e8f0'}},
+      scales:{x:{grid:{color:'#1a1a2e'},ticks:{color:'#555',font:{size:10}}},y:{grid:{color:'#1a1a2e'},ticks:{color:'#555',font:{size:10}}}}}
+  });
+}
+
+// ─── Init ──────────────────────────────────────────────────────────────────
+loadState();
+render();
+</script>
+</body>
+</html>
